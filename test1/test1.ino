@@ -3,10 +3,15 @@
 int Red_LED=3;
 int Green_LED=5;
 int Blue_LED=6;
-int blueTx=10;   //Tx (보내는핀 설정)
-int blueRx=9;   //Rx (받는핀 설정)
+int blueTx=10;        //Tx (보내는핀 설정)
+int blueRx=9;         //Rx (받는핀 설정)
+
+//uint8_t vol = 0x0E;     //mp3 볼륨 설정용
+//int MPpin1 = 1;
+//int MPpin2 = 2;
 
 SoftwareSerial mySerial(blueTx, blueRx);  //시리얼 통신을 위한 객체선언
+SoftwareSerial mp3(MPpin1, MPpin2);
 String myString=""; //받는 문자열
 
 void LED_Setup(){
@@ -16,12 +21,14 @@ void LED_Setup(){
   
 void setup() {
   Serial.begin(9600);   //시리얼모니터 
-  mySerial.begin(9600); //블루투스 시리얼 개방
+  mp3.begin(9600);       //mp3 플레이어 모듈 시리얼 개방
+  mySerial.begin(9600);  //블루투스 시리얼 개방
+  delay(100);
   LED_Setup();
 }
 
 
-void RainBow_Color()
+void RainBow_Color()//무지개빛 빛 방출
 {
   while(1){
   for( int i = 0 ; i < 255 ; i ++ ) 
@@ -44,6 +51,113 @@ void RainBow_Color()
   }}
 }
 
+  boolean SetMusicPlay(uint8_t hbyte, uint8_t lbyte)
+{
+  mp3.write(0x7E);
+  mp3.write(0x04);
+  mp3.write(0xA0);
+  mp3.write(hbyte);
+  mp3.write(lbyte);
+  mp3.write(0x7E);
+  delay(10);
+  while (mp3.available())
+  {
+    if (0xA0 == mp3.read())
+      return true;
+    else
+      return false;
+  }
+}
+  boolean NextMusicPlay()
+{
+  mp3.write(0x7E);
+  mp3.write(0x04);
+  mp3.write(0xA5);
+  mp3.write(0x7E);
+  delay(10);
+  while (mp3.available())
+  {
+    if (0xA0 == mp3.read())
+      return true;
+    else
+      return false;
+  }
+}
+  boolean PrevMusicPlay()
+{
+  mp3.write(0x7E);
+  mp3.write(0x04);
+  mp3.write(0xA6);
+  mp3.write(0x7E);
+  delay(10);
+  while (mp3.available())
+  {
+    if (0xA0 == mp3.read())
+      return true;
+    else
+      return false;
+  }
+}
+  boolean MusicPause()
+{
+  mp3.write(0x7E);
+  mp3.write(0x04);
+  mp3.write(0xA3);
+  mp3.write(0x7E);
+  delay(10);
+  while (mp3.available())
+  {
+    if (0xA0 == mp3.read())
+      return true;
+    else
+      return false;
+  }
+}
+
+
+
+//Set the volume, the range is 0x00 to 0x1F
+boolean SetVolume(uint8_t volume)
+{
+    mp3.write(0x7E);
+    mp3.write(0x03);
+    mp3.write(0xA7);
+    mp3.write(volume);
+    mp3.write(0x7E);
+    delay(10);
+    while(mp3.available())
+    {
+        if (0xA7==mp3.read())
+        return true;
+        else
+        return false;
+    }
+}
+
+
+boolean SetPlayMode(uint8_t playmode)
+{
+  if (((playmode == 0x00) | (playmode == 0x01) | (playmode == 0x02) | (playmode == 0x03)) == false)
+  {
+    Serial.println("PlayMode Parameter Error! ");
+    return false;
+  }
+  mp3.write(0x7E);
+  mp3.write(0x03);
+  mp3.write(0xA9);
+  mp3.write(playmode);//올 트랙 반복 재생을 기본으로함
+  mp3.write(0x7E);
+  delay(10);
+  while (mp3.available())
+  {
+    if (0xA9 == mp3.read())
+      return true;
+    else
+      return false;
+  }
+}
+
+
 void loop() {
   while(mySerial.available())  //mySerial에 전송된 값이 있으면
   {
@@ -57,9 +171,9 @@ void loop() {
     Serial.println("input value: "+myString); //시리얼모니터에 myString값 출력
     
     if(myString == "on" ){//입력받은 값이 on이면
-    analogWrite(Red_LED, HIGH);
-    analogWrite(Green_LED, HIGH);
-    analogWrite(Blue_LED, HIGH);}
+      analogWrite(Red_LED, HIGH);
+      analogWrite(Green_LED, HIGH);
+      analogWrite(Blue_LED, HIGH);}
 
     if(myString == "next" ){
       for( int i = 0 ; i < random(0,255) ; i ++ ) 
@@ -71,13 +185,42 @@ void loop() {
     }
     
     if(myString == "off" ){
-    pinMode(Red_LED, LOW);
-    pinMode(Green_LED, LOW);
-    pinMode(Blue_LED, LOW);}
+      pinMode(Red_LED, LOW);
+      pinMode(Green_LED, LOW);
+      pinMode(Blue_LED, LOW);
+     }
+    
+    if(myString == "start" ){
+     SetPlayMode(0x02);//전곡 반복 재생모드로
+     delay(1000);
+     SetMusicPlay(00,00);//0000 파일부터 재생
+     delay(1000);}
+
+    if(myString == "next" ){//다음곡 재생
+     NextMusicPlay();
+      delay(1000);}
+      
+    if(myString == "prev" ){//이전곡
+     PrevMusicPlay();
+      delay(1000);}
+      
+    if(myString == "pause" ){//일시정지
+     MusicPause();
+      delay(1000);}
+      
+    if(myString == "volup" ){
+      if(vol == 0x1F) return; //최대 볼륨이면 동작하지 않음
+      vol += 1;
+      SetVolume(vol);//볼륨 범위 0x00 to 0x1F
+     }
+    
+    if(myString == "voldown" ){
+      if( vol == 0x00 ) return; //최소 볼륨이면 동작하지 않음
+      vol -= 1;
+      SetVolume(vol);//볼륨 범위 0x00 to 0x1F
+    }
+
     myString="";  //myString 변수값 초기화
   }
   }
-
-
-//http://deneb21.tistory.com/267
 
