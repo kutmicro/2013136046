@@ -1,4 +1,5 @@
 #include <SoftwareSerial.h> //시리얼 통신 라이브러리 호출
+//일반 입출력 데이터핀을 rx,tx핀으로 동작 가능하게끔 만들어주는 라이브러리
 
 /***************핀 설정*****************/
 int Red_LED=3;
@@ -14,6 +15,7 @@ int blue=0;
 int green=0;
 
 //일반 입출력 데이터 핀을 rx,tx로 동작 가능하도록 만들어주는 함수 softwareserial name(핀번호,핀번호)
+//소프트웨어 시리얼로 
 SoftwareSerial mySerial(blueTx, blueRx);  //시리얼 통신을 위한 객체선언
 //입력받는 문자열을 저장하기위한 변수
 String myString=""; //받는 문자열
@@ -41,9 +43,14 @@ void turnRGB(){
   analogWrite( Red_LED, red );
   analogWrite( Green_LED, green );
   analogWrite( Blue_LED, blue );
+  //analogwirte는 pwm 파형을 만들어주는 명령어(아날로그 신호를 출력할 수는 없지만 pwm 방식으로 아날로그 신호에 가깝게 만들어줌)
+  //아두이노에서 pwm 방식으로 아날로그 값을 출력 할 때 0에서 255까지 총 256가지의 값을 출력 가능
+  //각 값에 따라 duty cycle(1인상태의 비율)이 몇퍼센트인지 바뀜
+  //그에 led 밝기는 0에서 최소, 255에서 최대가 됨(low,high)
 }
 
 void other(){
+  //부드럽게 변화시키기위해서 for문 활용
   int r = random(3);
   switch(r){
   case 0:
@@ -124,7 +131,7 @@ void loop() {
           break;
         case 1://ON 상태라면 OFF
           resetRGB();
-          digitalWrite(Red_LED, HIGH);//근데 왜 HIGH로 해야 꺼지지?
+          digitalWrite(Red_LED, HIGH);//근데 왜 HIGH로 해야 꺼지지? -> 캐소드 / 애소드 타입에 따라서 다름
           digitalWrite(Green_LED, HIGH);
           digitalWrite(Blue_LED, HIGH);
           break;
