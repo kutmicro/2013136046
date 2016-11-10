@@ -1,8 +1,8 @@
 #include <SoftwareSerial.h> //시리얼 통신 라이브러리 호출
 
 uint8_t vol = 0x0E;     //mp3 볼륨 설정용
-int MPpin1 = 1;
-int MPpin2 = 2;
+int MPpin1 = 12;
+int MPpin2 = 13;
 String myString=""; //받는 문자열(블루투스 모듈로)
 
 SoftwareSerial mp3(MPpin1, MPpin2);       //시리얼 통신을 위한 객체선언(mp3 모듈)
