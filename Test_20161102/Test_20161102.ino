@@ -105,6 +105,114 @@ void RainBow_Color()
   }
 }
 
+
+  boolean SetMusicPlay(uint8_t hbyte, uint8_t lbyte)
+{
+  mp3.write(0x7E);
+  mp3.write(0x04);
+  mp3.write(0xA0);
+  mp3.write(hbyte);
+  mp3.write(lbyte);
+  mp3.write(0x7E);
+  delay(10);
+  while (mp3.available())
+  {
+    if (0xA0 == mp3.read())
+      return true;
+    else
+      return false;
+  }
+}
+  boolean NextMusicPlay()
+{
+  mp3.write(0x7E);
+  mp3.write(0x04);
+  mp3.write(0xA5);
+  mp3.write(0x7E);
+  delay(10);
+  while (mp3.available())
+  {
+    if (0xA0 == mp3.read())
+      return true;
+    else
+      return false;
+  }
+}
+  boolean PrevMusicPlay()
+{
+  mp3.write(0x7E);
+  mp3.write(0x04);
+  mp3.write(0xA6);
+  mp3.write(0x7E);
+  delay(10);
+  while (mp3.available())
+  {
+    if (0xA0 == mp3.read())
+      return true;
+    else
+      return false;
+  }
+}
+  boolean MusicPause()
+{
+  mp3.write(0x7E);
+  mp3.write(0x04);
+  mp3.write(0xA3);
+  mp3.write(0x7E);
+  delay(10);
+  while (mp3.available())
+  {
+    if (0xA0 == mp3.read())
+      return true;
+    else
+      return false;
+  }
+}
+
+
+
+//Set the volume, the range is 0x00 to 0x1F
+boolean SetVolume(uint8_t volume)
+{
+    mp3.write(0x7E);
+    mp3.write(0x03);
+    mp3.write(0xA7);
+    mp3.write(volume);
+    mp3.write(0x7E);
+    delay(10);
+    while(mp3.available())
+    {
+        if (0xA7==mp3.read())
+        return true;
+        else
+        return false;
+    }
+}
+
+
+boolean SetPlayMode(uint8_t playmode)
+{
+  if (((playmode == 0x00) | (playmode == 0x01) | (playmode == 0x02) | (playmode == 0x03)) == false)
+  {
+    Serial.println("PlayMode Parameter Error! ");
+    return false;
+  }
+  mp3.write(0x7E);
+  mp3.write(0x03);
+  mp3.write(0xA9);
+  mp3.write(playmode);//올 트랙 반복 재생을 기본으로함
+  mp3.write(0x7E);
+  delay(10);
+  while (mp3.available())
+  {
+    if (0xA9 == mp3.read())
+      return true;
+    else
+      return false;
+  }
+}
+
+
 void loop() {
   while(mySerial.available())  //mySerial에 전송된 값이 있으면
   {
@@ -148,6 +256,35 @@ void loop() {
       {
         RainBow_Color();//무지개빛 계속반복
       }
+    }
+      if(myString == "start" ){
+     SetPlayMode(0x02);//전곡 반복 재생모드로
+     delay(1000);
+     SetMusicPlay(00,00);//0000 파일부터 재생
+     delay(1000);}
+
+    if(myString == "next" ){//다음곡 재생
+     NextMusicPlay();
+      delay(1000);}
+      
+    if(myString == "prev" ){//이전곡
+     PrevMusicPlay();
+      delay(1000);}
+      
+    if(myString == "pause" ){//일시정지
+     MusicPause();
+      delay(1000);}
+      
+    if(myString == "volup" ){
+      if(vol == 0x1F) break; //최대 볼륨이면 동작하지 않음
+      vol += 1;
+      SetVolume(vol);//볼륨 범위 0x00 to 0x1F
+     }
+    
+    if(myString == "voldown" ){
+      if( vol == 0x00 ) break; //최소 볼륨이면 동작하지 않음
+      vol -= 1;
+      SetVolume(vol);//볼륨 범위 0x00 to 0x1F
     }
    
     myString="";  //myString 변수값 초기화
