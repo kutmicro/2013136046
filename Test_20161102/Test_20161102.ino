@@ -7,16 +7,18 @@ int Green_LED=5;
 int Blue_LED=6;
 int blueTx=10;   //Tx (보내는핀 설정)
 int blueRx=9;   //Rx (받는핀 설정)
-//int mp3tx = 12;
-//int mp3rx = 13;
+int mp3tx = 12;
+int mp3rx = 13;
 /**************led 설정 ****************/
 int red=0;
 int blue=0;
 int green=0;
+uint8_t vol = 15;
 
 //일반 입출력 데이터 핀을 rx,tx로 동작 가능하도록 만들어주는 함수 softwareserial name(핀번호,핀번호)
 //소프트웨어 시리얼로 
 SoftwareSerial mySerial(blueTx, blueRx);  //시리얼 통신을 위한 객체선언
+SoftwareSerial mp3(mp3tx, mp3rx);  //시리얼 통신을 위한 객체선언
 //입력받는 문자열을 저장하기위한 변수
 String myString=""; //받는 문자열
 
@@ -276,13 +278,13 @@ void loop() {
       delay(1000);}
       
     if(myString == "volup" ){
-      if(vol == 0x1F) break; //최대 볼륨이면 동작하지 않음
+      if(vol == 0x1F) {} //최대 볼륨이면 동작하지 않음
       vol += 1;
       SetVolume(vol);//볼륨 범위 0x00 to 0x1F
      }
     
     if(myString == "voldown" ){
-      if( vol == 0x00 ) break; //최소 볼륨이면 동작하지 않음
+      if( vol == 0x00 ) {} //최소 볼륨이면 동작하지 않음
       vol -= 1;
       SetVolume(vol);//볼륨 범위 0x00 to 0x1F
     }
