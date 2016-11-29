@@ -6,25 +6,19 @@ int Blue_LED=6;
 int blueTx=10;        //Tx (보내는핀 설정)
 int blueRx=9;         //Rx (받는핀 설정)
 
-//uint8_t vol = 0x0E;     //mp3 볼륨 설정용
-//int MPpin1 = 1;
-//int MPpin2 = 2;
+uint8_t vol = 0x0E;     //mp3 볼륨 설정용
+int MPpintx = 11;
+int MPpinrx = 12;
 
 SoftwareSerial mySerial(blueTx, blueRx);  //시리얼 통신을 위한 객체선언1(bluetooth모듈)
-SoftwareSerial mp3(MPpin1, MPpin2);       //시리얼 통신을 위한 객체선언2(mp3 모듈)
+SoftwareSerial mp3(MPpintx, MPpinrx);       //시리얼 통신을 위한 객체선언2(mp3 모듈)
 String myString=""; //받는 문자열
-
-void LED_Setup(){
-  pinMode(Red_LED, OUTPUT);
-  pinMode(Green_LED, OUTPUT);
-  pinMode(Blue_LED, OUTPUT);}
   
 void setup() {
   Serial.begin(9600);   //시리얼모니터 
   mp3.begin(9600);       //mp3 플레이어 모듈 시리얼 개방
   mySerial.begin(9600);  //블루투스 시리얼 개방
   delay(100);
-  LED_Setup();
 }
 
 
@@ -209,13 +203,13 @@ void loop() {
       delay(1000);}
       
     if(myString == "volup" ){
-      if(vol == 0x1F) break; //최대 볼륨이면 동작하지 않음
+      if(vol == 0x1F) {} //최대 볼륨이면 동작하지 않음
       vol += 1;
       SetVolume(vol);//볼륨 범위 0x00 to 0x1F
      }
     
     if(myString == "voldown" ){
-      if( vol == 0x00 ) break; //최소 볼륨이면 동작하지 않음
+      if( vol == 0x00 ){} //최소 볼륨이면 동작하지 않음
       vol -= 1;
       SetVolume(vol);//볼륨 범위 0x00 to 0x1F
     }
