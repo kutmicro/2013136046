@@ -16,6 +16,12 @@ int red=0;
 int blue=0;
 int green=0;
 int vol = 15;
+/**************상태 변수***************/
+int state = 0;
+int firstmusicorder = 0;
+int pausestate = 0;
+boolean play_state;// connect Pin4 to BUSY pin of player
+
 
 //일반 입출력 데이터 핀을 rx,tx로 동작 가능하도록 만들어주는 함수 softwareserial name(핀번호,핀번호)
 //소프트웨어 시리얼로 
@@ -25,13 +31,20 @@ SoftwareSerial mp(mptx, mprx);  //시리얼 통신을 위한 객체선언
 String myString=""; //받는 문자열
 
 
+void resetRGB(){  //rgb 타입에 따라 다름
+  red = 255;
+  green = 255;
+  blue = 255;
+}
+
 void setup() {
   //시리얼 통신을 초기화하고 전송속도를 설정하는 함수 name.begin(전송속도)
   Serial.begin(9600);   //시리얼모니터 개방
-  mySerial.begin(9600);  //블루투스 시리얼 개방
   mp.begin (9600);
+  mySerial.begin(9600);  //블루투스 시리얼 개방
   mp3_set_serial (mp);  //set softwareSerial for DFPlayer-mini mp3 module 
-  delay(1);  //wait 1ms for mp3 module to set volume
+  delay(10);  //wait 1ms for mp3 module to set volume
+  resetRGB();
   mp3_set_volume (vol);
 }
 
@@ -41,10 +54,10 @@ void setRGB(int i){
    green = (int)(red + blue)/2; 
 }
 
-void resetRGB(){
-  red = 0;
-  green = 0;
-  blue = 0;
+void setRGB(int a, int b, int c){
+  red = a;
+  blue = b;
+  green = c;
 }
 
 void turnRGB(){
@@ -93,30 +106,40 @@ void other(){
 
 void RainBow_Color()
 {
-  for( int i = 0 ; i < 255 ; i ++ ) 
-  {
-    analogWrite( Red_LED, i );
-    analogWrite( Blue_LED, 255 - i );
-    delay(10);
-  }
-   for( int i = 0 ; i < 255 ; i ++ ) 
-  {
-    analogWrite( Green_LED, i );
-    analogWrite( Red_LED, 255 - i );
-    delay(10);
-  }
-   for( int i = 0 ; i < 255 ; i ++ ) 
-  {
-    analogWrite( Blue_LED, i );
-    analogWrite( Green_LED, 255 - i );
-    delay(10);
-  }
+  while(!mySerial.available())  //mySerial에 전송된 값이 없다면 반복 있으면 정지
+      {
+        for( int i = 0 ; i < 255 ; i ++ ) 
+         {
+          analogWrite( Red_LED, i );
+          analogWrite( Blue_LED, 255 - i );
+          delay(10);
+        }
+         for( int i = 0 ; i < 255 ; i ++ ) 
+        {
+         analogWrite( Green_LED, i );
+          analogWrite( Red_LED, 255 - i );
+          delay(10);
+       }
+        for( int i = 0 ; i < 255 ; i ++ ) 
+       {
+         analogWrite( Blue_LED, i );
+         analogWrite( Green_LED, 255 - i );
+         delay(10);
+        }
+        play_state = digitalRead(busy);
+        if(play_state == HIGH && firstmusicorder == 1){
+          mp3_next ();
+        }
+     }
 }
 
+void firstorder(){
+  
+}
 
 void loop() {
-  boolean play_state = digitalRead(busy);// connect Pin3 to BUSY pin of player
-  if(play_state == HIGH){
+  play_state = digitalRead(busy);// connect Pin4 to BUSY pin of player
+ if(play_state == HIGH && firstmusicorder == 1 ){
     mp3_next ();
   }
   
@@ -133,59 +156,80 @@ void loop() {
     
     if(myString == "onoff" ){//입력받은 값이 on이면
       int s;
-      int i = random(255);//0~255까지의 랜덤 숫자 반환
-      if(red == 0 && blue == 0 && green == 0 )
+      if(red == 255 && blue == 255 && green == 255 )
       s = 0;
-      if(red > 0 || blue > 0 || green >0)
+      if(red < 255 || blue < 255 || green <255 )
       s = 1;
       switch(s){
         case 0://OFF 상태라면 무작위 색깔로 ON
-          setRGB(i);
+          setRGB(100,100,100);
           turnRGB();
+          state = 0;
           break;
         case 1://ON 상태라면 OFF
           resetRGB();
-          digitalWrite(Red_LED, LOW);//근데 왜 HIGH로 해야 꺼지지? -> 캐소드 / 애소드 타입에 따라서 다름
-          digitalWrite(Green_LED, LOW);
-          digitalWrite(Blue_LED, LOW);
+          turnRGB();
+          state = 0;
+          //digitalWrite(Red_LED, HIGH);//근데 왜 HIGH로 해야 꺼지지? -> 캐소드 / 애소드 타입에 따라서 다름
+          //digitalWrite(Green_LED, HIGH);
+          //digitalWrite(Blue_LED, HIGH);
           break;
       }
      }
      if(myString == "other" ){//다른색깔로바꿔줌
-       other();
-       //analogWrite( Red_LED, red );
-       //analogWrite( Green_LED, green );
-       //analogWrite( Blue_LED, blue );
+         other();
+         state = 0;
       }
     if(myString == "sleep" ){
-      while(!mySerial.available())  //mySerial에 전송된 값이 없다면 반복 있으면 정지
-      {
+        if( state == 0 ){
         RainBow_Color();//무지개빛 계속반복
-      }
+        state = 1;
+        }
+        else if( state == 1 )
+        state = 0;
     }
       if(myString == "start" ){
+        firstmusicorder = 1;
         mp3_play ();  
+      //  if( state == 1 )
+       // RainBow_Color();
         }
 
     if(myString == "next" ){
-      mp3_next ();
+        mp3_next ();
+        if( state == 1 )
+        RainBow_Color();
       }
       
     if(myString == "prev" ){
-      mp3_prev ();}
+        mp3_prev ();
+        if( state == 1 )
+        RainBow_Color();
+      }
       
     if(myString == "pause" ){
+      while(!mySerial.available())  //mySerial에 전송된 값이 없다면 반복 있으면 정지
+      {
        mp3_pause ();
+       if( state == 1 ){
+       RainBow_Color();
+       break;
+       }
       }
+    }
       
     if(myString == "volup" ){
       if(vol<30)
       mp3_set_volume (++vol);
+      if( state == 1 )
+        RainBow_Color();
      }
     
     if(myString == "voldown" ){
       if(vol>0)
       mp3_set_volume (--vol);
+      if( state == 1 )
+        RainBow_Color();
     }
    
     myString="";  //myString 변수값 초기화
