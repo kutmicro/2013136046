@@ -1,40 +1,40 @@
 #include <DFPlayer_Mini_Mp3.h>
 #include <SoftwareSerial.h> //시리얼 통신 라이브러리 호출
 //일반 입출력 데이터핀을 rx,tx핀으로 동작 가능하게끔 만들어주는 라이브러리
-
-/***************핀 설정*****************/
-int Red_LED=3;
-int Green_LED=5;
-int Blue_LED=6;
-int blueTx=10;   //Tx (보내는핀 설정)
-int blueRx=9;   //Rx (받는핀 설정)
-int mptx = 12;
-int mprx = 13;
-int busy = 4; //음악이 재생중인지 아닌지 판독하는 핀
-/**************led 설정 ****************/
-int red=0;
-int blue=0;
-int green=0;
-int vol = 15;
-/**************상태 변수***************/
-int state = 0;
-int firstmusicorder = 0;
-int pausestate = 0;
-boolean play_state;// connect Pin4 to BUSY pin of player
-
+#define MAX = 255;
+/**********************핀 설정*********************/
+/********이름********번호**************기능********/
+int Red_LED   = 3;              // 빨간색 
+int Green_LED = 5;              // 초록색
+int Blue_LED  = 6;              // 파란색
+int blueTx    = 10;             // bluetooth Tx (보내는핀 설정)
+int blueRx    = 9;              // bluetooth Rx (받는핀 설정)
+int mptx      = 12;             // mp3module Tx
+int mprx      = 13;             // mp3module Rx
+int busy      = 4;              // 음악이 재생중인지 아닌지 판독하는 핀
+/********************일반 변수***********************/
+int red=0;          //빨간색 led변수
+int blue=0;         //파란색 led변수
+int green=0;        //초록색 led변수
+int vol = 15;       // 볼륨 변수
+String myString=""; // 받는 문자열(입력받는 문자열을 저장하기위한 변수)
+/*******************상태 변수************************/
+boolean state = 0;              // 수면모드실행 상태인지 아닌지 실행(1),실행아님(0)
+boolean firstmusicorder = 0;    // 음악재생 최초 실행 여부
+boolean pausestate = 0;         // 일시 정지상태
+boolean play_state;              // 음악이 재생중인지 아닌지
 
 //일반 입출력 데이터 핀을 rx,tx로 동작 가능하도록 만들어주는 함수 softwareserial name(핀번호,핀번호)
 //소프트웨어 시리얼로 
-SoftwareSerial mySerial(blueTx, blueRx);  //시리얼 통신을 위한 객체선언
-SoftwareSerial mp(mptx, mprx);  //시리얼 통신을 위한 객체선언
-//입력받는 문자열을 저장하기위한 변수
-String myString=""; //받는 문자열
+SoftwareSerial mySerial(blueTx, blueRx);      //시리얼 통신을 위한 객체선언
+SoftwareSerial mp(mptx, mprx);                //시리얼 통신을 위한 객체선언
+
 
 
 void resetRGB(){  //rgb 타입에 따라 다름
-  red = 255;
-  green = 255;
-  blue = 255;
+  red = MAX;
+  green = MAX;
+  blue = MAX;
 }
 
 void setup() {
@@ -46,12 +46,6 @@ void setup() {
   delay(10);  //wait 1ms for mp3 module to set volume
   resetRGB();
   mp3_set_volume (vol);
-}
-
-void setRGB(int i){
-   red = i;
-   blue = 255 - i;
-   green = (int)(red + blue)/2; 
 }
 
 void setRGB(int a, int b, int c){
@@ -74,33 +68,38 @@ void other(){
   //부드럽게 변화시키기위해서 for문 활용
   int r = random(3);
   switch(r){
+    
   case 0:
+  
   for(int i = 0 ; i < 20 ; i ++){
   red += i;
   turnRGB();
   delay(10);
   }
-  if(red > 255)
-  red = 0;
+  if(red > MAX)
+    red -= MAX;
   break;
+  
   case 1:
   for(int i = 0 ; i < 20 ; i ++){
   blue += i;
   turnRGB();
   delay(10);
   }
-  if(blue > 255)
-  blue = 0;
+  if(blue > MAX)
+  blue -= MAX;
   break;
+  
   case 2:
   for(int i = 0 ; i < 20 ; i ++){
   green += i;
   turnRGB();
   delay(10);
   }
-  if(green > 255)
-  green = 0;
+  if(green > MAX)
+  green -= MAX;
   break;
+  
   }
 }
 
@@ -116,7 +115,7 @@ void RainBow_Color()
         }
          for( int i = 0 ; i < 255 ; i ++ ) 
         {
-         analogWrite( Green_LED, i );
+          analogWrite( Green_LED, i );
           analogWrite( Red_LED, 255 - i );
           delay(10);
        }
@@ -127,7 +126,7 @@ void RainBow_Color()
          delay(10);
         }
         play_state = digitalRead(busy);
-        if(play_state == HIGH && firstmusicorder == 1){
+        if(play_state == HIGH && firstmusicorder == true){
           mp3_next ();
         }
      }
@@ -139,7 +138,7 @@ void firstorder(){
 
 void loop() {
   play_state = digitalRead(busy);// connect Pin4 to BUSY pin of player
- if(play_state == HIGH && firstmusicorder == 1 ){
+ if(play_state == HIGH && firstmusicorder == true ){
     mp3_next ();
   }
   
@@ -164,71 +163,71 @@ void loop() {
         case 0://OFF 상태라면 무작위 색깔로 ON
           setRGB(100,100,100);
           turnRGB();
-          state = 0;
+          state = false;
           break;
         case 1://ON 상태라면 OFF
           resetRGB();
           turnRGB();
-          state = 0;
-          //digitalWrite(Red_LED, HIGH);//근데 왜 HIGH로 해야 꺼지지? -> 캐소드 / 애소드 타입에 따라서 다름
-          //digitalWrite(Green_LED, HIGH);
-          //digitalWrite(Blue_LED, HIGH);
+          state = false;
           break;
       }
      }
      if(myString == "other" ){//다른색깔로바꿔줌
          other();
-         state = 0;
+         state = false;
       }
     if(myString == "sleep" ){
-        if( state == 0 ){
+        if( state == false ){
         RainBow_Color();//무지개빛 계속반복
-        state = 1;
+        state = true;
         }
-        else if( state == 1 )
-        state = 0;
     }
+    
       if(myString == "start" ){
-        firstmusicorder = 1;
-        mp3_play ();  
-      //  if( state == 1 )
-       // RainBow_Color();
+        if( state == true )
+         RainBow_Color();
+        if( state == false )
+          firstmusicorder = true;
+          mp3_play ();  
+      
         }
 
     if(myString == "next" ){
-        mp3_next ();
-        if( state == 1 )
+      if( state == true )
         RainBow_Color();
+      if( state == false )
+        mp3_next ();
       }
       
     if(myString == "prev" ){
-        mp3_prev ();
-        if( state == 1 )
+       if( state == true )
         RainBow_Color();
+       if( state == false )
+        mp3_prev ();
       }
       
     if(myString == "pause" ){
+      if( state == true )
+      RainBow_Color();
+      if( state == false ){
       while(!mySerial.available())  //mySerial에 전송된 값이 없다면 반복 있으면 정지
-      {
-       mp3_pause ();
-       if( state == 1 ){
-       RainBow_Color();
-       break;
-       }
+        {
+       mp3_pause ();      
+        }
       }
     }
       
     if(myString == "volup" ){
-      if(vol<30)
+      if( state == false && vol<30)
       mp3_set_volume (++vol);
-      if( state == 1 )
+      if( state == true )
         RainBow_Color();
      }
     
     if(myString == "voldown" ){
-      if(vol>0)
+      if(state == false && vol>0)
       mp3_set_volume (--vol);
-      if( state == 1 )
+      if( state == true )
         RainBow_Color();
     }
    
