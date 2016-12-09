@@ -1,7 +1,7 @@
 #include <DFPlayer_Mini_Mp3.h>
 #include <SoftwareSerial.h> //시리얼 통신 라이브러리 호출
 //일반 입출력 데이터핀을 rx,tx핀으로 동작 가능하게끔 만들어주는 라이브러리
-#define MAX = 255;
+#define MAX 255
 /**********************핀 설정*********************/
 /********이름********번호**************기능********/
 int Red_LED   = 3;              // 빨간색 
@@ -12,17 +12,19 @@ int blueRx    = 9;              // bluetooth Rx (받는핀 설정)
 int mptx      = 12;             // mp3module Tx
 int mprx      = 13;             // mp3module Rx
 int busy      = 4;              // 음악이 재생중인지 아닌지 판독하는 핀
+
 /********************일반 변수***********************/
-int red=0;          //빨간색 led변수
-int blue=0;         //파란색 led변수
-int green=0;        //초록색 led변수
-int vol = 15;       // 볼륨 변수
-String myString=""; // 받는 문자열(입력받는 문자열을 저장하기위한 변수)
+int red=0;                    //빨간색 led변수
+int blue=0;                   //파란색 led변수
+int green=0;                  //초록색 led변수
+int vol = 15;                 // 볼륨 변수
+String myString="";           // 받는 문자열(입력받는 문자열을 저장하기위한 변수)
+
 /*******************상태 변수************************/
 boolean state = 0;              // 수면모드실행 상태인지 아닌지 실행(1),실행아님(0)
 boolean firstmusicorder = 0;    // 음악재생 최초 실행 여부
 boolean pausestate = 0;         // 일시 정지상태
-boolean play_state;              // 음악이 재생중인지 아닌지
+boolean play_state;             // 음악이 재생중인지 아닌지
 
 //일반 입출력 데이터 핀을 rx,tx로 동작 가능하도록 만들어주는 함수 softwareserial name(핀번호,핀번호)
 //소프트웨어 시리얼로 
@@ -155,9 +157,9 @@ void loop() {
     
     if(myString == "onoff" ){//입력받은 값이 on이면
       int s;
-      if(red == 255 && blue == 255 && green == 255 )
+      if(red == MAX && blue == MAX && green == MAX )
       s = 0;
-      if(red < 255 || blue < 255 || green <255 )
+      if(red < MAX || blue < MAX || green < MAX )
       s = 1;
       switch(s){
         case 0://OFF 상태라면 무작위 색깔로 ON
