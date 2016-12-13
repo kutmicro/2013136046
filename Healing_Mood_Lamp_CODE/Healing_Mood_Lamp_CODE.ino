@@ -14,11 +14,12 @@ int mprx      = 13;             // mp3module Rx
 int busy      = 4;              // 음악이 재생중인지 아닌지 판독하는 핀
 
 /********************일반 변수***********************/
-int red=0;                    //빨간색 led변수
-int blue=0;                   //파란색 led변수
-int green=0;                  //초록색 led변수
+int red=0;                    // 빨간색 led변수
+int blue=0;                   // 파란색 led변수
+int green=0;                  // 초록색 led변수
 int vol = 15;                 // 볼륨 변수
 String myString="";           // 받는 문자열(입력받는 문자열을 저장하기위한 변수)
+int count=0;                  // 수면모드 카운터
 
 /*******************상태 변수************************/
 boolean state = 0;              // 수면모드실행 상태인지 아닌지 실행(1),실행아님(0)
@@ -105,10 +106,23 @@ void other(){
   }
 }
 
-void RainBow_Color()
+void allreset(){
+  resetRGB();
+  myString="";
+  state = false;
+  firstmusicorder = false; 
+  pausestate = false;   
+  count=0;
+  turnRGB();
+  count = 0;
+  mp3_stop();
+}
+
+void SleepMode()
 {
+  
   while(!mySerial.available())  //mySerial에 전송된 값이 없다면 반복 있으면 정지
-  {
+  { //조명 바뀌는 동작 시간 7초
     for( int i = 0 ; i < 255 ; i ++ ) 
     {
       analogWrite( Red_LED, i );
@@ -132,9 +146,14 @@ void RainBow_Color()
       && pausestate == false){  // 처음 음악재생을 했었고 노래가끝나면 다음곡 재생
         mp3_next ();
     }
+    count ++;
+    if( count == 3 ) { //약 1시간동안 수면모드(count 500) 일 경우 음악재생/조명 꺼지도록 all reset
+      allreset();
+      break;
+    }
+    
   }
 }
-
 
 void loop() {
   play_state = digitalRead(busy);     // connect Pin4 to BUSY pin of player
@@ -146,16 +165,16 @@ void loop() {
 
   while(mySerial.available())  //mySerial에 전송된 값이 있으면
   {
-    char myChar = (char)mySerial.read();  //mySerial int 값을 char 형식으로 변환
-    myString+=myChar;   //수신되는 문자를 myString에 모두 붙임 (1바이트씩 전송되는 것을 연결)
-    delay(5);           //수신 문자열 끊김 방지
+    char myChar = (char)mySerial.read();   //mySerial int 값을 char 형식으로 변환
+    myString+=myChar;                      //수신되는 문자를 myString에 모두 붙임 (1바이트씩 전송되는 것을 연결)
+    delay(5);                              //수신 문자열 끊김 방지
   }
   
   if(!myString.equals(""))  //myString 값이 있다면
   {
-    Serial.println("input value: "+myString); // 시리얼모니터에 myString값 출력
-    mySerial.println("  "+myString);           // 앱에 보낸 데이터 값 출력
-    
+    Serial.println("input value: "+ myString); // 시리얼모니터에 myString값 출력
+    mySerial.println("\n  " + myString);           // 앱에 보낸 데이터 값 출력
+  
     if(myString == "onoff" ){   //전달받은 문자열이 onoff면 전원을 끄거나 킴
       int s;
       if(red == MAX && blue == MAX && green == MAX )  // 꺼져있는 상태이면
@@ -179,26 +198,29 @@ void loop() {
       other();
       state = false;
     }
+    
     if(myString == "sleep" ){   //수면 모드 실행, 음악관련 조작 x
       if( state == false ){
-        RainBow_Color();//무지개빛 계속반복
         state = true;
+        SleepMode();//무지개빛 계속반복
       }
     }
 
     if(myString == "start" ){   // 음악 재생
-      if( state == true )
-        RainBow_Color();
-      if( state == false ){
+      if( state == true )       //수면모드 실행중이라면 start 명령을 전달해도 수면모드
+        SleepMode();
+      if( state == false && firstmusicorder == false){  // 처음 재생시 랜덤재생
         firstmusicorder = true;
+        mp3_random_play();
+      }
+      if( state == false && firstmusicorder == true){   // 그 이후부턴 재생하던 곡 부터 재생
         mp3_play (); 
       }
     }
 
-
     if(myString == "next" ){    // 다음 곡 재생
       if( state == true )
-        RainBow_Color();
+        SleepMode();
       if( state == false )
         mp3_next ();
       pausestate = false;
@@ -206,7 +228,7 @@ void loop() {
 
     if(myString == "prev" ){    // 이전 곡 재생
       if( state == true )
-        RainBow_Color();
+        SleepMode();
       if( state == false )
         mp3_prev ();
       pausestate = false;
@@ -214,12 +236,12 @@ void loop() {
 
     if(myString == "pause" ){   // 일시정지
       if( state == true )
-        RainBow_Color();
+        SleepMode();
       if( state == false ){
         pausestate = true;      
-        while(!mySerial.available())  //mySerial에 전송된 값이 없다면 반복 있으면 정지
+       while(!mySerial.available())  //mySerial에 전송된 값이 없다면 반복 있으면 정지
         {
-          mp3_pause ();      
+          mp3_pause();      
         }
       }
     }
@@ -228,14 +250,14 @@ void loop() {
       if( state == false && vol<30)
         mp3_set_volume (++vol);
       if( state == true )
-        RainBow_Color();
+        SleepMode();
     }
 
     if(myString == "voldown" ){   //볼륨 down
       if(state == false && vol>0)
         mp3_set_volume (--vol);
       if( state == true )
-        RainBow_Color();
+        SleepMode();
     }
 
     myString="";  //myString 변수값 초기화
